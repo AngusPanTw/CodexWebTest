@@ -24,8 +24,8 @@
 6. 產生報表
 
 ## 輸出檔案
-- `output/TSE_stock_records_20250407_20250604.txt`
-- `output/TSE_stock_price_comparison_20250526_20250604.txt`
+- `output/TSE_stock_records_20250407_20250604.xlsx`
+- `output/TSE_stock_price_comparison_20250526_20250604.xlsx`
 - `output/stock_price_analyzer.log`
 
 以上檔案儲存在本儲存庫的 `output/` 目錄下，方便在雲端或不同環境使用。
