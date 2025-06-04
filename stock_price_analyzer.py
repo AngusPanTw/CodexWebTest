@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any
 
 import requests
+from openpyxl import Workbook
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 LOG_FILE = os.path.join(OUTPUT_DIR, 'stock_price_analyzer.log')
@@ -42,8 +43,8 @@ BASE_DATES = generate_dates('20250407', '20250525')
 COMPARE_DATES = generate_dates('20250526', '20250604')
 
 # Output filenames include "TSE" to標示上市股票
-RECORDS_FILE = f"TSE_stock_records_{ALL_DATES[0]}_{ALL_DATES[-1]}.txt"
-COMPARISON_FILE = f"TSE_stock_price_comparison_{COMPARE_DATES[0]}_{COMPARE_DATES[-1]}.txt"
+RECORDS_FILE = f"TSE_stock_records_{ALL_DATES[0]}_{ALL_DATES[-1]}.xlsx"
+COMPARISON_FILE = f"TSE_stock_price_comparison_{COMPARE_DATES[0]}_{COMPARE_DATES[-1]}.xlsx"
 
 BASE_URL = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={date}&type=ALL'
 
@@ -136,26 +137,35 @@ def compare_prices(lowest: Dict[str, Dict[str, Any]], dates: List[str]) -> List[
 
 
 def save_price_records(data: Dict[str, List[Dict[str, Any]]], filename: str) -> None:
-    """Save raw price records to the given filename."""
+    """Save raw price records to the given Excel filename."""
     path = os.path.join(OUTPUT_DIR, filename)
-    with open(path, 'w', encoding='utf-8') as f:
-        for date, records in data.items():
-            for rec in records:
-                f.write(f"{date},{rec['code']},{rec['name']},{rec['close']:.2f}\n")
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["date", "code", "name", "close"])
+    for date, records in data.items():
+        for rec in records:
+            ws.append([date, rec['code'], rec['name'], f"{rec['close']:.2f}"])
+    wb.save(path)
     logging.info("Saved price records to %s", path)
 
 
 def save_comparison(results: List[Dict[str, Any]]) -> None:
-    """Save comparison results to COMPARISON_FILE."""
+    """Save comparison results to COMPARISON_FILE in Excel format."""
     path = os.path.join(OUTPUT_DIR, COMPARISON_FILE)
-    with open(path, 'w', encoding='utf-8') as f:
-        for item in results:
-            date_str = datetime.strptime(item['date'], '%Y%m%d').date()
-            f.write(
-                f"{item['code']},{item['name']},{date_str}創新低,"
-                f"收盤價{item['close']:.2f},(基準低點:{item['base_low']:.2f}),"
-                f"新低價{item['low']:.2f}\n"
-            )
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["code", "name", "date", "close", "base_low", "new_low"])
+    for item in results:
+        date_str = datetime.strptime(item['date'], '%Y%m%d').date()
+        ws.append([
+            item['code'],
+            item['name'],
+            date_str,
+            f"{item['close']:.2f}",
+            f"{item['base_low']:.2f}",
+            f"{item['low']:.2f}",
+        ])
+    wb.save(path)
     logging.info("Saved comparison results to %s", path)
 
 
