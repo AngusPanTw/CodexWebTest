@@ -9,11 +9,11 @@ import requests
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 
 APR_DATES = [
-    '20250407',
-    '20250408',
-    '20250409',
-    '20250410',
-    '20250411',
+    '20250407', '20250408', '20250409', '20250410', '20250411',
+    '20250412', '20250413', '20250414', '20250415', '20250416',
+    '20250417', '20250418', '20250419', '20250420', '20250421',
+    '20250422', '20250423', '20250424', '20250425', '20250426',
+    '20250427', '20250428', '20250429', '20250430',
 ]
 
 JUN_DATES = [
@@ -23,9 +23,9 @@ JUN_DATES = [
     '20250604',
 ]
 
-# Output filenames include the first April date and last June date for clarity
-RECORDS_FILE = f"stock_records_{APR_DATES[0]}_{JUN_DATES[-1]}.txt"
-COMPARISON_FILE = f"stock_price_comparison_{JUN_DATES[0]}_{JUN_DATES[-1]}.txt"
+# Output filenames include "TSE" to標示上市股票
+RECORDS_FILE = f"TSE_stock_records_{APR_DATES[0]}_{JUN_DATES[-1]}.txt"
+COMPARISON_FILE = f"TSE_stock_price_comparison_{JUN_DATES[0]}_{JUN_DATES[-1]}.txt"
 
 BASE_URL = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={date}&type=ALL'
 
@@ -53,17 +53,20 @@ def parse_csv(text: str) -> List[Dict[str, Any]]:
     reader = csv.reader(io.StringIO(decoded))
     records = []
     for row in reader:
-        # Expected row[0] is code, row[1] is name, row[8] is closing price
+        # Expected row[0] is code, row[1] is name, row[7] is low price, row[8] is closing price
         if len(row) < 9 or not row[0].isdigit():
             continue
+        low_str = row[7].strip().replace(',', '')
         close_str = row[8].strip().replace(',', '')
         try:
+            low_price = float(low_str)
             close_price = float(close_str)
         except ValueError:
             continue
         records.append({
             'code': row[0].strip(),
             'name': row[1].strip(),
+            'low': low_price,
             'close': close_price,
         })
     return records
@@ -80,9 +83,9 @@ def record_lowest_prices(dates: List[str]) -> Dict[str, Dict[str, Any]]:
         records = fetch_records(date)
         for rec in records:
             current = lowest.get(rec['code'])
-            if not current or rec['close'] < current['close']:
+            if not current or rec['low'] < current['low']:
                 lowest[rec['code']] = {
-                    'close': rec['close'],
+                    'low': rec['low'],
                     'date': date,
                     'name': rec['name'],
                 }
@@ -98,15 +101,14 @@ def compare_prices(lowest: Dict[str, Dict[str, Any]], dates: List[str]) -> List[
             today = record_map.get(code)
             if not today:
                 continue  # No trading data for this stock on the date
-            if today['close'] < info['close']:
-                diff = (info['close'] - today['close']) / info['close'] * 100
+            if today['low'] < info['low']:
                 results.append({
                     'date': date,
                     'code': code,
                     'name': info['name'],
                     'close': today['close'],
-                    'apr_low': info['close'],
-                    'diff_percent': diff,
+                    'apr_low': info['low'],
+                    'low': today['low'],
                 })
     return results
 
@@ -126,10 +128,10 @@ def save_comparison(results: List[Dict[str, Any]]) -> None:
     with open(path, 'w', encoding='utf-8') as f:
         for item in results:
             date_str = datetime.strptime(item['date'], '%Y%m%d').date()
-            flag = '是' if item['close'] < item['apr_low'] else '否'
             f.write(
-                f"{date_str},{item['code']},{item['name']},{item['close']:.2f},"
-                f"{flag}(4月低點:{item['apr_low']:.2f}),跌破:{item['diff_percent']:.2f}%\n"
+                f"{item['code']},{item['name']},{date_str}創新低,"
+                f"收盤價{item['close']:.2f},(4月低點:{item['apr_low']:.2f}),"
+                f"新低價{item['low']:.2f}\n"
             )
 
 
