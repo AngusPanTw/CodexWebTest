@@ -40,3 +40,14 @@ python stock_price_analyzer.py
 ```
 1101,台泥,2025-06-02創新低,收盤價27.70,(基準低點:28.50),新低價25.50
 ```
+
+## 上櫃資料分析
+若需擷取上櫃 (OTC) 的每日行情並進行相同比較，可執行：
+```bash
+python otc_stock_price_analyzer.py
+```
+
+對應產出檔案如下：
+- `output/OTC_stock_records_20250407_20250604.xlsx`
+- `output/OTC_stock_price_comparison_20250526_20250604.xlsx`
+- `output/otc_stock_price_analyzer.log`
