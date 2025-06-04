@@ -1,31 +1,34 @@
 import csv
 import io
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Any
 
 import requests
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 
-APR_DATES = [
-    '20250407', '20250408', '20250409', '20250410', '20250411',
-    '20250412', '20250413', '20250414', '20250415', '20250416',
-    '20250417', '20250418', '20250419', '20250420', '20250421',
-    '20250422', '20250423', '20250424', '20250425', '20250426',
-    '20250427', '20250428', '20250429', '20250430',
-]
 
-JUN_DATES = [
-    '20250601',
-    '20250602',
-    '20250603',
-    '20250604',
-]
+def generate_dates(start: str, end: str) -> List[str]:
+    """Generate YYYYMMDD strings for weekdays between start and end inclusive."""
+    begin = datetime.strptime(start, '%Y%m%d')
+    finish = datetime.strptime(end, '%Y%m%d')
+    dates: List[str] = []
+    current = begin
+    while current <= finish:
+        if current.weekday() < 5:  # Monday-Friday
+            dates.append(current.strftime('%Y%m%d'))
+        current += timedelta(days=1)
+    return dates
+
+
+ALL_DATES = generate_dates('20250407', '20250604')
+BASE_DATES = generate_dates('20250407', '20250525')
+COMPARE_DATES = generate_dates('20250526', '20250604')
 
 # Output filenames include "TSE" to標示上市股票
-RECORDS_FILE = f"TSE_stock_records_{APR_DATES[0]}_{JUN_DATES[-1]}.txt"
-COMPARISON_FILE = f"TSE_stock_price_comparison_{JUN_DATES[0]}_{JUN_DATES[-1]}.txt"
+RECORDS_FILE = f"TSE_stock_records_{ALL_DATES[0]}_{ALL_DATES[-1]}.txt"
+COMPARISON_FILE = f"TSE_stock_price_comparison_{COMPARE_DATES[0]}_{COMPARE_DATES[-1]}.txt"
 
 BASE_URL = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={date}&type=ALL'
 
@@ -138,15 +141,13 @@ def save_comparison(results: List[Dict[str, Any]]) -> None:
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    april_records = {d: fetch_records(d) for d in APR_DATES}
-    lowest = record_lowest_prices(APR_DATES)
+    all_records = {d: fetch_records(d) for d in ALL_DATES}
+    lowest = record_lowest_prices(BASE_DATES)
 
-    june_records = {d: fetch_records(d) for d in JUN_DATES}
+    # Save raw trading data covering April到六月初期間
+    save_price_records(all_records, RECORDS_FILE)
 
-    # Save raw trading data covering April and June dates
-    save_price_records({**april_records, **june_records}, RECORDS_FILE)
-
-    comparison = compare_prices(lowest, JUN_DATES)
+    comparison = compare_prices(lowest, COMPARE_DATES)
     save_comparison(comparison)
 
 
