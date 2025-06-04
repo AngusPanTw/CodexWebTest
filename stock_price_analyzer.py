@@ -1,12 +1,27 @@
 import csv
 import io
 import os
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 
 import requests
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
+LOG_FILE = os.path.join(OUTPUT_DIR, 'stock_price_analyzer.log')
+
+
+def setup_logging() -> None:
+    """Configure logging to file and console."""
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(message)s',
+        handlers=[
+            logging.FileHandler(LOG_FILE, encoding='utf-8'),
+            logging.StreamHandler()
+        ],
+    )
 
 
 def generate_dates(start: str, end: str) -> List[str]:
@@ -36,13 +51,15 @@ BASE_URL = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={d
 def fetch_csv(date: str) -> str:
     """Download CSV text for the specified date."""
     url = BASE_URL.format(date=date)
+    logging.info("Start download %s", date)
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
+        logging.info("Downloaded %s", date)
         # TWSE files use Big5 (CP950) encoding
         return response.content.decode('cp950', errors='ignore')
     except Exception as exc:
-        print(f"Failed to download data for {date}: {exc}")
+        logging.error("Failed to download %s: %s", date, exc)
         return ''
 
 
@@ -77,7 +94,9 @@ def parse_csv(text: str) -> List[Dict[str, Any]]:
 
 def fetch_records(date: str) -> List[Dict[str, Any]]:
     text = fetch_csv(date)
-    return parse_csv(text)
+    records = parse_csv(text)
+    logging.info("Parsed %d records for %s", len(records), date)
+    return records
 
 
 def record_lowest_prices(dates: List[str]) -> Dict[str, Dict[str, Any]]:
@@ -110,7 +129,7 @@ def compare_prices(lowest: Dict[str, Dict[str, Any]], dates: List[str]) -> List[
                     'code': code,
                     'name': info['name'],
                     'close': today['close'],
-                    'apr_low': info['low'],
+                    'base_low': info['low'],
                     'low': today['low'],
                 })
     return results
@@ -123,6 +142,7 @@ def save_price_records(data: Dict[str, List[Dict[str, Any]]], filename: str) -> 
         for date, records in data.items():
             for rec in records:
                 f.write(f"{date},{rec['code']},{rec['name']},{rec['close']:.2f}\n")
+    logging.info("Saved price records to %s", path)
 
 
 def save_comparison(results: List[Dict[str, Any]]) -> None:
@@ -133,14 +153,15 @@ def save_comparison(results: List[Dict[str, Any]]) -> None:
             date_str = datetime.strptime(item['date'], '%Y%m%d').date()
             f.write(
                 f"{item['code']},{item['name']},{date_str}創新低,"
-                f"收盤價{item['close']:.2f},(4月低點:{item['apr_low']:.2f}),"
+                f"收盤價{item['close']:.2f},(基準低點:{item['base_low']:.2f}),"
                 f"新低價{item['low']:.2f}\n"
             )
+    logging.info("Saved comparison results to %s", path)
 
 
 def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
+    setup_logging()
+    
     all_records = {d: fetch_records(d) for d in ALL_DATES}
     lowest = record_lowest_prices(BASE_DATES)
 
@@ -149,6 +170,7 @@ def main():
 
     comparison = compare_prices(lowest, COMPARE_DATES)
     save_comparison(comparison)
+    logging.info("Analysis complete")
 
 
 if __name__ == '__main__':

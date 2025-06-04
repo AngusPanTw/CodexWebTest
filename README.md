@@ -26,8 +26,10 @@
 ## 輸出檔案
 - `output/TSE_stock_records_20250407_20250604.txt`
 - `output/TSE_stock_price_comparison_20250526_20250604.txt`
+- `output/stock_price_analyzer.log`
 
 以上檔案儲存在本儲存庫的 `output/` 目錄下，方便在雲端或不同環境使用。
+程式執行過程會寫入 `stock_price_analyzer.log` 以便追蹤下載與比對狀態。
 
 ## 執行方式
 ```bash
@@ -36,5 +38,5 @@ python stock_price_analyzer.py
 
 程式會輸出範例格式：
 ```
-1101,台泥,2025-06-02創新低,收盤價27.70,(4月低點:28.50),新低價25.50
+1101,台泥,2025-06-02創新低,收盤價27.70,(基準低點:28.50),新低價25.50
 ```
