@@ -38,9 +38,9 @@ def generate_dates(start: str, end: str) -> List[str]:
     return dates
 
 
-ALL_DATES = generate_dates('20250407', '20250604')
+ALL_DATES = generate_dates('20250407', '20250605')
 BASE_DATES = generate_dates('20250407', '20250525')
-COMPARE_DATES = generate_dates('20250526', '20250604')
+COMPARE_DATES = generate_dates('20250526', '20250605')
 
 # Output filenames include "TSE" to標示上市股票
 RECORDS_FILE = f"TSE_stock_records_{ALL_DATES[0]}_{ALL_DATES[-1]}.xlsx"
