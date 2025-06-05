@@ -42,12 +42,14 @@ python stock_price_analyzer.py
 ```
 
 ## 上櫃資料分析
-若需擷取上櫃 (OTC) 的每日行情並進行相同比較，可執行：
-```bash
-python otc_stock_price_analyzer.py
-```
+~~若需擷取上櫃 (OTC) 的每日行情並進行相同比較，可執行：~~
+~~```bash~~
+~~python otc_stock_price_analyzer.py~~
+~~```~~
 
-對應產出檔案如下：
-- `output/OTC_stock_records_20250407_20250604.xlsx`
-- `output/OTC_stock_price_comparison_20250526_20250604.xlsx`
-- `output/otc_stock_price_analyzer.log`
+**注意：經測試後發現櫃買 API 無法正常擷取指定日期的資料，加入日期參數後仍顯示為最新一天的資料，因此暫時無法提供上櫃股票的歷史比較分析。**
+
+~~對應產出檔案如下：~~
+~~- `output/OTC_stock_records_20250407_20250604.xlsx`~~
+~~- `output/OTC_stock_price_comparison_20250526_20250604.xlsx`~~
+~~- `output/otc_stock_price_analyzer.log`~~
