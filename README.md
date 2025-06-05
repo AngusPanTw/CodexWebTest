@@ -27,6 +27,9 @@
 - `output/TSE_stock_records_20250407_20250605.xlsx`
 - `output/TSE_stock_price_comparison_20250526_20250605.xlsx`
 - `output/stock_price_analyzer.log`
+- `output/TSE_stock_high_records_20250407_20250605.xlsx`
+- `output/TSE_stock_price_highs_20250526_20250605.xlsx`
+- `output/stock_price_high_analyzer.log`
 
 以上檔案儲存在本儲存庫的 `output/` 目錄下，方便在雲端或不同環境使用。
 程式執行過程會寫入 `stock_price_analyzer.log` 以便追蹤下載與比對狀態。
@@ -36,9 +39,18 @@
 python stock_price_analyzer.py
 ```
 
+若要找出不斷創新高的個股，請執行：
+```bash
+python stock_price_high_analyzer.py
+```
+
 程式會輸出範例格式：
 ```
 1101,台泥,2025-06-02創新低,收盤價27.70,(基準低點:28.50),新低價25.50
+```
+若執行 `stock_price_high_analyzer.py`，會輸出類似：
+```
+1101,台泥,2025-06-02創新高,收盤價30.50,(基準高點:29.80),新高價31.20
 ```
 
 ## 上櫃資料分析
