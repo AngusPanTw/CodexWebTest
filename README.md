@@ -6,8 +6,8 @@
 ## 專案需求
 - 下載台灣證券交易所每日股票資料
 - 擷取兩個時間區間的資料：
-  1. 2025 年 4 月 7 日起（川普宣布關稅執行後）至 6 月 5 日的所有交易日
-- 找出 5 月 26 日至 6 月 5 日期間仍然跌破先前低點的股票
+  1. 2025 年 4 月 7 日起（川普宣布關稅執行後）至 6 月 4 日的所有交易日
+- 找出 5 月 26 日至 6 月 4 日期間仍然跌破先前低點的股票
 - 處理中文編碼 (Big5/CP950)，並過濾無效資料
 
 ## 資料來源
@@ -20,12 +20,12 @@
 2. 以正確編碼讀取資料
 3. 擷取日期、證券代號、名稱、收盤價及最低價
 4. 記錄 4 月 7 日至 5 月 25 日期間的最低價
-5. 比對 5 月 26 日至 6 月 5 日是否跌破上述低點
+5. 比對 5 月 26 日至 6 月 4 日是否跌破上述低點
 6. 產生報表
 
 ## 輸出檔案
-- `output/TSE_stock_records_20250407_20250605.xlsx`
-- `output/TSE_stock_price_comparison_20250526_20250605.xlsx`
+- `output/TSE_stock_records_20250407_20250604.xlsx`
+- `output/TSE_stock_price_comparison_20250526_20250604.xlsx`
 - `output/stock_price_analyzer.log`
 - `output/TSE_stock_high_records_20250407_20250605.xlsx`
 - `output/TSE_stock_price_highs_20250526_20250605.xlsx`
@@ -54,14 +54,12 @@ python stock_price_high_analyzer.py
 ```
 
 ## 上櫃資料分析
-~~若需擷取上櫃 (OTC) 的每日行情並進行相同比較，可執行：~~
-~~```bash~~
-~~python otc_stock_price_analyzer.py~~
-~~```~~
+若需擷取上櫃 (OTC) 的每日行情並進行相同比較，可執行：
+```bash
+python otc_stock_price_analyzer.py
+```
 
-**注意：經測試後發現櫃買 API 無法正常擷取指定日期的資料，加入日期參數後仍顯示為最新一天的資料，因此暫時無法提供上櫃股票的歷史比較分析。**
-
-~~對應產出檔案如下：~~
-~~- `output/OTC_stock_records_20250407_20250605.xlsx`~~
-~~- `output/OTC_stock_price_comparison_20250526_20250605.xlsx`~~
-~~- `output/otc_stock_price_analyzer.log`~~
+對應產出檔案如下：
+- `output/OTC_stock_records_20250407_20250604.xlsx`
+- `output/OTC_stock_price_comparison_20250526_20250604.xlsx`
+- `output/otc_stock_price_analyzer.log`
