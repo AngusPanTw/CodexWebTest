@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台股創新高/低比較查看器</title>
+  <title>台股創新高/低比較查看器 (離線版)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -32,21 +32,27 @@
       gap: 20px;
       align-items: center;
       flex-wrap: wrap;
-    }
-    .control-group {
+    }    .control-group {
       display: flex;
       flex-direction: column;
       gap: 5px;
+      min-width: 120px;
     }
     label {
       font-weight: bold;
       color: #555;
+      font-size: 13px;
     }
     select, input {
       padding: 8px;
       border: 1px solid #ddd;
       border-radius: 4px;
       font-size: 14px;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,.25);
     }
     .stats {
       margin-bottom: 20px;
@@ -109,19 +115,48 @@
       padding: 20px;
       color: #666;
     }
-    .error {
-      color: #dc3545;
-      background-color: #f8d7da;
-      border: 1px solid #f5c6cb;
-      padding: 10px;
+    .file-input {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 5px;
+    }
+    .file-input input[type="file"] {
+      margin-left: 10px;
+    }
+    .note {
+      background-color: #d1ecf1;
+      border: 1px solid #bee5eb;
       border-radius: 4px;
-      margin: 10px 0;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>台股創新高/低比較查看器</h1>
+    <h1>台股創新高/低比較查看器 (離線版)</h1>
+      <div class="note">
+      <strong>📋 使用說明：</strong> 
+      此版本不需要本地伺服器。請選擇對應的 JSON 檔案來載入資料。<br>
+      <strong>📅 日期說明：</strong>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li><strong>基準期間：</strong> 2025-04-07 至 2025-05-25（基準高/低價的統計期間）</li>
+        <li><strong>比較期間：</strong> 2025-05-26 至 2025-06-20（創新高/低發生期間）</li>
+        <li><strong>基準價：</strong> 基準期間內該股票的最高/最低價</li>
+        <li><strong>新高/新低：</strong> 在比較期間突破基準價的當日最高/最低價</li>
+      </ul>
+    </div>
+    
+    <div class="file-input">
+      <label for="highFileInput">載入創新高比較資料:</label>
+      <input type="file" id="highFileInput" accept=".json" />
+      
+      <label for="lowFileInput" style="margin-left: 20px;">載入創新低比較資料:</label>
+      <input type="file" id="lowFileInput" accept=".json" />
+    </div>
     
     <div class="controls">
       <div class="control-group">
@@ -131,13 +166,10 @@
           <option value="low">創新低</option>
         </select>
       </div>
-      
-      <div class="control-group">
-        <label for="dateInput">篩選日期:</label>
-        <input type="date" id="dateInput">
-      </div>
-      
-      <div class="control-group">
+        <div class="control-group">
+        <label for="dateInput">篩選創新日期:</label>
+        <input type="date" id="dateInput" title="篩選特定日期創出新高/新低的股票">
+      </div>      <div class="control-group">
         <label for="stockInput">股票代號/名稱:</label>
         <input type="text" id="stockInput" placeholder="輸入代號或名稱搜尋">
       </div>
@@ -145,9 +177,7 @@
       <button onclick="clearFilters()">清除篩選</button>
     </div>
     
-    <div id="stats" class="stats"></div>
-    <div id="loading" class="loading">載入資料中...</div>
-    <div id="error" class="error" style="display: none;"></div>      <table id="resultTable" style="display: none;">
+    <div id="stats" class="stats">請載入資料檔案</div>    <table id="resultTable">
       <thead>
         <tr>
           <th class="sortable" data-sort="code">代號</th>
@@ -159,46 +189,81 @@
           <th class="sortable" data-sort="change">漲跌幅(%)</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <tr>
+          <td colspan="7" style="text-align: center; color: #666;">請選擇 JSON 檔案載入資料</td>
+        </tr>
+      </tbody>
     </table>
   </div>
+
 <script>
-const highUrl = './output/台股創新高比較_20250526_20250620.json';
-const lowUrl = './output/台股創新低比較_20250526_20250620.json';
 let highData = [], lowData = [];
 let isHighDataLoaded = false, isLowDataLoaded = false;
 let currentSort = { column: 'date', direction: 'desc' }; // 預設排序
 
-// 載入資料
-async function loadData() {
-  try {
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('error').style.display = 'none';
-    
-    // 載入創新高資料
-    const highResponse = await fetch(highUrl);
-    if (!highResponse.ok) throw new Error(`載入創新高資料失敗: ${highResponse.status}`);
-    highData = await highResponse.json();
-    isHighDataLoaded = true;
-    
-    // 載入創新低資料
-    const lowResponse = await fetch(lowUrl);
-    if (!lowResponse.ok) throw new Error(`載入創新低資料失敗: ${lowResponse.status}`);
-    lowData = await lowResponse.json();
-    isLowDataLoaded = true;
-      document.getElementById('loading').style.display = 'none';
-    document.getElementById('resultTable').style.display = 'table';
-      // 初始化顯示
-    updateTableHeaders('high'); // 初始化為創新高模式
-    setupTableSorting(); // 設定表格排序功能
-    updateSortIndicators(); // 設定初始排序指示器
-    filter();
-    
-  } catch (error) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').textContent = `載入資料時發生錯誤: ${error.message}`;
-    document.getElementById('error').style.display = 'block';
-    console.error('載入資料錯誤:', error);
+// 檔案讀取處理
+document.getElementById('highFileInput').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        highData = JSON.parse(e.target.result);
+        isHighDataLoaded = true;
+        console.log('創新高資料載入成功:', highData.length, '筆記錄');
+        updateStatus();
+        if (document.getElementById('typeSelect').value === 'high') {
+          filter();
+        }
+      } catch (error) {
+        alert('載入創新高資料時發生錯誤: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+});
+
+document.getElementById('lowFileInput').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        lowData = JSON.parse(e.target.result);
+        isLowDataLoaded = true;
+        console.log('創新低資料載入成功:', lowData.length, '筆記錄');
+        updateStatus();
+        if (document.getElementById('typeSelect').value === 'low') {
+          filter();
+        }
+      } catch (error) {
+        alert('載入創新低資料時發生錯誤: ' + error.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+});
+
+// 更新表格標題
+function updateTableHeaders(type) {
+  const basePriceHeader = document.getElementById('basePriceHeader');
+  if (type === 'high') {
+    basePriceHeader.innerHTML = '區間最高價<br><small>(2025/04/07-05/25)</small>';
+  } else {
+    basePriceHeader.innerHTML = '區間最低價<br><small>(2025/04/07-05/25)</small>';
+  }
+}
+
+// 更新狀態資訊
+function updateStatus() {
+  const highLoaded = isHighDataLoaded ? `✅ 創新高 (${highData.length} 筆)` : '❌ 創新高';
+  const lowLoaded = isLowDataLoaded ? `✅ 創新低 (${lowData.length} 筆)` : '❌ 創新低';
+  
+  if (!isHighDataLoaded && !isLowDataLoaded) {
+    document.getElementById('stats').textContent = '請載入資料檔案';
+  } else {
+    document.getElementById('stats').textContent = `資料狀態: ${highLoaded} | ${lowLoaded}`;
   }
 }
 
@@ -211,14 +276,10 @@ function calculateChangePercent(close, base) {
   return change.toFixed(2);
 }
 
-// 更新表格標題
-function updateTableHeaders(type) {
-  const basePriceHeader = document.getElementById('basePriceHeader');
-  if (type === 'high') {
-    basePriceHeader.innerHTML = '區間最高價<br><small>(2025/04/07-05/25)</small>';
-  } else {
-    basePriceHeader.innerHTML = '區間最低價<br><small>(2025/04/07-05/25)</small>';
-  }
+// 解析價格（處理可能的字串格式）
+function parsePrice(price) {
+  const parsed = parseFloat(price);
+  return isNaN(parsed) ? '0.00' : parsed.toFixed(2);
 }
 
 // 表格標題點擊排序
@@ -335,6 +396,13 @@ function filter() {
     data = lowData;
   }
   
+  if (data.length === 0) {
+    const tbody = document.querySelector('#resultTable tbody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">請載入對應的資料檔案</td></tr>';
+    updateFilterStats([], type, date, stockSearch);
+    return;
+  }
+  
   // 套用篩選
   let filteredData = data.filter(item => {
     // 日期篩選
@@ -352,7 +420,7 @@ function filter() {
   filteredData = sortData(filteredData, type);
   
   // 更新統計資訊
-  updateStats(filteredData, type, date, stockSearch);
+  updateFilterStats(filteredData, type, date, stockSearch);
   
   // 更新表格
   const tbody = document.querySelector('#resultTable tbody');
@@ -365,9 +433,6 @@ function filter() {
     return;
   }
   
-  // 依日期排序（新的在前）
-  filteredData.sort((a, b) => new Date(b.date) - new Date(a.date));
-  
   for (const item of filteredData) {
     const tr = document.createElement('tr');
     tr.className = type === 'high' ? 'high-row' : 'low-row';
@@ -375,17 +440,16 @@ function filter() {
     const basePrice = type === 'high' ? item.base_high : item.base_low;
     const newPrice = type === 'high' ? item.new_high : item.new_low;
     const changePercent = calculateChangePercent(newPrice, basePrice);
-    
-    tr.innerHTML = `
+      tr.innerHTML = `
       <td style="font-weight: bold;">${item.code}</td>
       <td>${item.name}</td>
-      <td>${item.date}</td>
-      <td style="text-align: right;">$${parseFloat(item.close).toFixed(2)}</td>
-      <td style="text-align: right;">$${parseFloat(basePrice).toFixed(2)}</td>
-      <td style="text-align: right; font-weight: bold; color: ${type === 'high' ? '#28a745' : '#dc3545'};">
+      <td title="創新${type === 'high' ? '高' : '低'}發生的日期">${item.date}</td>
+      <td style="text-align: right;" title="創新${type === 'high' ? '高' : '低'}當日的收盤價">$${parseFloat(item.close).toFixed(2)}</td>
+      <td style="text-align: right;" title="基準期間(2025/04/07-05/25)的${type === 'high' ? '最高' : '最低'}價">$${parseFloat(basePrice).toFixed(2)}</td>
+      <td style="text-align: right; font-weight: bold; color: ${type === 'high' ? '#28a745' : '#dc3545'};" title="創新${type === 'high' ? '高' : '低'}當日的${type === 'high' ? '最高' : '最低'}價">
         $${parseFloat(newPrice).toFixed(2)}
       </td>
-      <td style="text-align: right; font-weight: bold; color: ${changePercent !== 'N/A' && parseFloat(changePercent) > 0 ? '#28a745' : '#dc3545'};">
+      <td style="text-align: right; font-weight: bold; color: ${changePercent !== 'N/A' && parseFloat(changePercent) > 0 ? '#28a745' : '#dc3545'};" title="相對於基準價的漲跌幅">
         ${changePercent !== 'N/A' ? (parseFloat(changePercent) > 0 ? '+' : '') + changePercent + '%' : 'N/A'}
       </td>
     `;
@@ -393,20 +457,35 @@ function filter() {
   }
 }
 
-// 更新統計資訊
-function updateStats(data, type, dateFilter, stockFilter) {
-  const statsDiv = document.getElementById('stats');
+// 更新篩選統計資訊
+function updateFilterStats(data, type, dateFilter, stockFilter) {
   const totalCount = data.length;
   const typeText = type === 'high' ? '創新高' : '創新低';
   
   let statsText = `顯示 ${totalCount} 筆 ${typeText} 記錄`;
   
   if (dateFilter) {
-    statsText += ` (日期: ${dateFilter})`;
+    statsText += ` (創新日期: ${dateFilter})`;
   }
   
   if (stockFilter) {
     statsText += ` (搜尋: "${stockFilter}")`;
+  }
+  
+  // 顯示當前排序方式
+  const sortMap = {
+    'code': '依股票代號',
+    'name': '依股票名稱',
+    'date': '依創新日期',
+    'close': '依收盤價',
+    'base': '依基準價',
+    'new': '依新高/新低',
+    'change': '依漲跌幅'
+  };
+  
+  if (currentSort.column && sortMap[currentSort.column]) {
+    const direction = currentSort.direction === 'asc' ? '升序' : '降序';
+    statsText += ` | 排序: ${sortMap[currentSort.column]} (${direction})`;
   }
   
   // 計算日期分布
@@ -420,23 +499,25 @@ function updateStats(data, type, dateFilter, stockFilter) {
     if (dateCount > 1) {
       statsText += ` | 涵蓋 ${dateCount} 個交易日`;
     }
+    
+    // 顯示日期範圍
+    const dates = Object.keys(dateGroups).sort();
+    if (dates.length > 0) {
+      statsText += ` (${dates[0]} ~ ${dates[dates.length - 1]})`;
+    }
   }
   
-  statsDiv.textContent = statsText;
+  document.getElementById('stats').textContent = statsText;
 }
 
 // 清除所有篩選
 function clearFilters() {
   document.getElementById('dateInput').value = '';
   document.getElementById('stockInput').value = '';
+  // 重設排序為預設值
+  currentSort = { column: 'date', direction: 'desc' };
+  updateSortIndicators();
   filter();
-}
-
-// 取得所有可用日期
-function getAvailableDates() {
-  const allDates = new Set();
-  [...highData, ...lowData].forEach(item => allDates.add(item.date));
-  return Array.from(allDates).sort().reverse();
 }
 
 // 事件監聽器
@@ -444,8 +525,11 @@ document.getElementById('dateInput').addEventListener('change', filter);
 document.getElementById('typeSelect').addEventListener('change', filter);
 document.getElementById('stockInput').addEventListener('input', filter);
 
-// 頁面載入時開始載入資料
-window.addEventListener('load', loadData);
+// 初始化
+updateStatus();
+updateTableHeaders('high'); // 初始化為創新高模式
+setupTableSorting(); // 設定表格排序功能
+updateSortIndicators(); // 設定初始排序指示器
 </script>
 </body>
 </html>
