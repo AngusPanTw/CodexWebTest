@@ -1,12 +1,62 @@
 <!DOCTYPE html>
-<html lang='zh-TW'>
+<html lang="zh-TW">
 <head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>CodexWebTest</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台股創新高/低比較查看器</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 4px; }
+  </style>
 </head>
 <body>
-    <h1>歡迎來到 CodexWebTest</h1>
-    <p>這是一個測試網頁。</p>
+  <h1>台股創新高/低比較查看器</h1>
+  <label for="typeSelect">資料類型:</label>
+  <select id="typeSelect">
+    <option value="high">創新高</option>
+    <option value="low">創新低</option>
+  </select>
+  <label for="dateInput">日期:</label>
+  <input type="date" id="dateInput">
+  <table id="resultTable">
+    <thead>
+      <tr>
+        <th>代號</th>
+        <th>名稱</th>
+        <th>日期</th>
+        <th>收盤價</th>
+        <th>基準價</th>
+        <th>新高/新低</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+<script>
+const highUrl = 'output/台股創新高比較_20250526_20250620.json';
+const lowUrl = 'output/台股創新低比較_20250526_20250620.json';
+let highData = [], lowData = [];
+fetch(highUrl).then(r => r.json()).then(d => { highData = d; filter(); });
+fetch(lowUrl).then(r => r.json()).then(d => { lowData = d; });
+function filter() {
+  const date = document.getElementById('dateInput').value;
+  const type = document.getElementById('typeSelect').value;
+  const data = (type === 'high' ? highData : lowData)
+    .filter(item => !date || item.date === date);
+  const tbody = document.querySelector('#resultTable tbody');
+  tbody.innerHTML = '';
+  for (const item of data) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${item.code}</td>` +
+                   `<td>${item.name}</td>` +
+                   `<td>${item.date}</td>` +
+                   `<td>${item.close}</td>` +
+                   `<td>${type === 'high' ? item.base_high : item.base_low}</td>` +
+                   `<td>${type === 'high' ? item.new_high : item.new_low}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+document.getElementById('dateInput').addEventListener('change', filter);
+document.getElementById('typeSelect').addEventListener('change', filter);
+</script>
 </body>
 </html>
